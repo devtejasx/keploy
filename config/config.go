@@ -645,11 +645,27 @@ func GetByPassPorts(conf *Config) []uint {
 	return ports
 }
 
+// SetSelectedTests selects the test sets testSets names for a run. A
+// comma-separated flag keeps the space after each comma (-t "test-set-1,
+// test-set-2", the help text's own example, gives " test-set-2"), so each name
+// is trimmed, and a blank one is no name.
 func SetSelectedTests(conf *Config, testSets []string) {
 	conf.Test.SelectedTests = make(map[string][]string)
-	for _, testSet := range testSets {
+	for _, testSet := range TestSetNames(testSets) {
 		conf.Test.SelectedTests[testSet] = []string{}
 	}
+}
+
+// TestSetNames is the test set names a flag's values give: each trimmed, the
+// blank ones left out.
+func TestSetNames(values []string) []string {
+	var out []string
+	for _, v := range values {
+		if v = strings.TrimSpace(v); v != "" {
+			out = append(out, v)
+		}
+	}
+	return out
 }
 
 func SetSelectedServices(conf *Config, services []string) {
@@ -661,9 +677,11 @@ func SetSelectedContractTests(conf *Config, tests []string) {
 	conf.Contract.Tests = tests
 }
 
+// SetSelectedTestSets selects the test sets testSets names for a report,
+// trimmed as SetSelectedTests trims them.
 func SetSelectedTestSets(conf *Config, testSets []string) {
 	conf.Report.SelectedTestSets = make(map[string][]string)
-	for _, testSet := range testSets {
+	for _, testSet := range TestSetNames(testSets) {
 		conf.Report.SelectedTestSets[testSet] = []string{}
 	}
 }

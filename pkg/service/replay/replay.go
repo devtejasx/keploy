@@ -696,8 +696,6 @@ func (r *Replayer) Start(ctx context.Context) (err error) {
 		return fmt.Errorf("%s", stopReason)
 	}
 
-	r.logger.Info("Test Sets to be Replayed", zap.Strings("testSets", testSetIDs))
-
 	if len(testSetIDs) == 0 {
 		recordCmd := models.HighlightGrayString("keploy record")
 		errMsg := fmt.Sprintf("No test sets found in the keploy folder. Please record testcases using %s command", recordCmd)
@@ -708,6 +706,15 @@ func (r *Replayer) Start(ctx context.Context) (err error) {
 		stopReason = "no test sets found"
 		return fmt.Errorf("%s", errMsg)
 	}
+
+	// The test sets this run replays, refused before anything starts when
+	// one it is asked for is not recorded.
+	selectedSets, err := r.selectTestSets(testSetIDs)
+	if err != nil {
+		stopReason = "a selected test set is not recorded"
+		return err
+	}
+	r.logger.Info("Test Sets to be Replayed", zap.Strings("testSets", selectedSets))
 
 	// The base path is read once, here, before any test is sent anywhere: one
 	// keploy cannot read is put in no test's URL, and leaves every test going
@@ -919,19 +926,7 @@ func (r *Replayer) Start(ctx context.Context) (err error) {
 	var testSets []string
 	runDomainSet := telemetry.NewDomainSet()
 	r.runDomainSet = runDomainSet
-	for _, testSetID := range testSetIDs {
-		if _, ok := r.config.Test.SelectedTests[testSetID]; !ok && len(r.config.Test.SelectedTests) != 0 {
-			continue
-		}
-		testSets = append(testSets, testSetID)
-	}
-	if len(testSets) == 0 {
-		testSets = testSetIDs
-	}
-
-	// Sort the testsets.
-	natsort.Sort(testSets)
-	testSets = r.applyTestSetOrder(testSets)
+	testSets = selectedSets
 	// cmdType is hoisted above the one-shot RunApplication block; the
 	// original assignment that lived here is removed to keep a single
 	// canonical declaration.
@@ -6580,19 +6575,44 @@ func (r *Replayer) GetSelectedTestSets(ctx context.Context) ([]string, error) {
 		utils.LogError(r.logger, err, "failed to get all test set ids")
 		return nil, fmt.Errorf("failed to get test set ids")
 	}
+	return r.selectTestSets(testSetIDs)
+}
 
-	var testSets []string
-	for _, testSetID := range testSetIDs {
-		if _, ok := r.config.Test.SelectedTests[testSetID]; !ok && len(r.config.Test.SelectedTests) != 0 {
-			continue
+// selectTestSets is the recorded test sets (testSetIDs) a run replays: those
+// test.selectedTests (-t/--test-sets, or keploy.yml) names, or every one when
+// it names none, in their natural order and then the configured one. A name
+// that is no recorded test set is refused, naming it, with the switch on and
+// off: dropped silently, -t "test-set-1,test-set-3" replayed test-set-1 alone
+// and passed, and a selection naming no recorded set at all replayed every
+// set.
+func (r *Replayer) selectTestSets(testSetIDs []string) ([]string, error) {
+	recorded := make(map[string]bool, len(testSetIDs))
+	for _, id := range testSetIDs {
+		recorded[id] = true
+	}
+	var unknown []string
+	for name := range r.config.Test.SelectedTests {
+		if !recorded[name] {
+			unknown = append(unknown, name)
 		}
-		testSets = append(testSets, testSetID)
 	}
-	if len(testSets) == 0 {
-		testSets = testSetIDs
+	if len(unknown) > 0 {
+		natsort.Sort(unknown)
+		known := slices.Clone(testSetIDs)
+		natsort.Sort(known)
+		err := fmt.Errorf("the test set(s) %s named for this run are not recorded", strings.Join(unknown, ", "))
+		utils.LogError(r.logger, err, "the run names a test set that is not recorded, so it replays none",
+			zap.Strings("notRecorded", unknown),
+			zap.Strings("recorded", known),
+			zap.String("next_step", "name only recorded test sets in -t/--test-sets (comma-separated) or in test.selectedTests in keploy.yml, or record the missing ones with keploy record"))
+		return nil, err
 	}
-
-	// Sort the testsets.
+	var testSets []string
+	for _, id := range testSetIDs {
+		if _, ok := r.config.Test.SelectedTests[id]; ok || len(r.config.Test.SelectedTests) == 0 {
+			testSets = append(testSets, id)
+		}
+	}
 	natsort.Sort(testSets)
 	return r.applyTestSetOrder(testSets), nil
 }
