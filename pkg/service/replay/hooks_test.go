@@ -148,7 +148,6 @@ func TestARefusalAtAnUnreachableAppPortSaysSoAndIsNotRetried(t *testing.T) {
 			wantMsg := fmt.Sprintf("the app's port %d cannot be reached from the host: %s", port, reason)
 			assert.Contains(t, err.Error(), wantMsg)
 			assert.True(t, neterr.IsConnRefused(err), "the refusal must still classify as one: %v", err)
-			assert.Contains(t, err.Error(), "connection refused")
 			assert.Contains(t, failedWith(tc, err).FailureInfo.Category, models.AppConnectionError,
 				"a test that failed with %v", err)
 			for _, e := range logs.All() {
@@ -320,4 +319,17 @@ func TestAfterTestRunWithoutAgentLeavesOutOnlyTheAgent(t *testing.T) {
 	require.EqualValues(t, 1, agent.afterTestRuns.Load())
 	require.NoError(t, h.AfterTestRun(withoutAgent(context.Background()), "test-run-0", nil, models.TestCoverage{}))
 	require.EqualValues(t, 1, agent.afterTestRuns.Load(), "the agent's hook was called with no agent left")
+}
+
+// A refused dial is a compose shutdown on every platform, not only where the
+// OS spells it "connection refused".
+func TestARefusedDialIsAComposeShutdownOnEveryPlatform(t *testing.T) {
+	port := closedLocalPort(t)
+	conn, err := net.Dial("tcp", net.JoinHostPort("127.0.0.1", strconv.Itoa(int(port))))
+	if err == nil {
+		conn.Close()
+		t.Fatal("dialing a closed port succeeded")
+	}
+	assert.True(t, isDockerComposeReplayShutdown(fmt.Errorf("failed to reach the app: %w", err)),
+		"a refused dial was not classified as a shutdown: %v", err)
 }

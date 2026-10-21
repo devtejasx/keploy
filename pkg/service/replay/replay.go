@@ -26,6 +26,7 @@ import (
 	grpcMatcher "go.keploy.io/server/v3/pkg/matcher/grpc"
 	httpMatcher "go.keploy.io/server/v3/pkg/matcher/http"
 	"go.keploy.io/server/v3/pkg/models"
+	"go.keploy.io/server/v3/pkg/neterr"
 	"go.keploy.io/server/v3/pkg/platform/coverage"
 	"go.keploy.io/server/v3/pkg/platform/coverage/golang"
 	"go.keploy.io/server/v3/pkg/platform/coverage/java"
@@ -149,6 +150,12 @@ func isDockerComposeReplayShutdown(err error) bool {
 		return false
 	}
 	if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+		return true
+	}
+	// A socket error still carrying its errno is classified by it: the text
+	// below is POSIX wording, which Winsock does not use ("No connection could
+	// be made because the target machine actively refused it").
+	if neterr.IsConnRefused(err) || neterr.IsConnReset(err) || neterr.IsBrokenPipe(err) {
 		return true
 	}
 	errMsg := strings.ToLower(err.Error())
