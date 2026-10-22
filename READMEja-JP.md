@@ -83,7 +83,7 @@ keploy test -c "CMD_TO_RUN_APP" --delay 10
 
 ローカルマシンのインストールなしでKeployを迅速にセットアップして実行します：
 
-[![GitHub Codescape](https://img.shields.io/badge/GH%20codespace-3670A0?style=for-the-badge&logo=github&logoColor=fff)]([https://github.dev/Sonichigo/mux-sql](https://github.dev/Sonichigo/mux-sql))
+[![GitHub Codescape](https://img.shields.io/badge/GH%20codespace-3670A0?style=for-the-badge&logo=github&logoColor=fff)](https://github.dev/Sonichigo/mux-sql)
 
 ## 🤔 質問がありますか？
 私たちに連絡してください。お手伝いします！

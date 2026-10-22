@@ -87,7 +87,7 @@ Pour l'intégrer avec votre bibliothèque de tests unitaires et voir la couvertu
 
 Configurez et lancez Keploy rapidement, aucune installation sur la machine locale n'est requise :
 
-[![GitHub Codescape](https://img.shields.io/badge/GH%20codespace-3670A0?style=for-the-badge&logo=github&logoColor=fff)]([https://github.dev/Sonichigo/mux-sql](https://github.dev/Sonichigo/mux-sql))
+[![GitHub Codescape](https://img.shields.io/badge/GH%20codespace-3670A0?style=for-the-badge&logo=github&logoColor=fff)](https://github.dev/Sonichigo/mux-sql)
 
 ## 🤔 Des questions?
 N'hésitez pas à nous contacter. Nous sommes là pour vous aider !

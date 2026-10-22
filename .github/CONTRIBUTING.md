@@ -6,7 +6,7 @@ If you don't know where to start contributing, ask us on our [Slack channel](htt
 
 ## Code of conduct
 
-Contributors are expected to adhere to the [Code of Conduct](CODE_OF_CONDUCT.md).
+Contributors are expected to adhere to the [Code of Conduct](../CODE_OF_CONDUCT.md).
 
 ## Prerequisites for the contributors
 
