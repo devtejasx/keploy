@@ -187,3 +187,17 @@ func TestClassifyInAClockWordInTheAnswerIsNoEcho(t *testing.T) {
 		t.Fatal("by the lead alone: learned as noise")
 	}
 }
+
+// An epoch with a fraction reads to the nanosecond it writes.
+func TestReadEpochFractionIsExact(t *testing.T) {
+	for s, want := range map[string]int64{
+		"1700000000.123456789": 1700000000123456789,
+		"1700000000.000000001": 1700000000000000001,
+		"1700000000.5":         1700000000500000000,
+	} {
+		got, _, ok := readEpoch(s)
+		if !ok || got.UnixNano() != want {
+			t.Errorf("readEpoch(%q) = %d, %v; want %d", s, got.UnixNano(), ok, want)
+		}
+	}
+}

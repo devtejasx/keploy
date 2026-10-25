@@ -353,12 +353,21 @@ func readEpoch(s string) (time.Time, time.Duration, bool) {
 	var res time.Duration
 	digits := s
 	if i := strings.IndexByte(s, '.'); i >= 0 {
-		digits = s[:i]
-		f, err := strconv.ParseFloat(s, 64)
+		// Parse the seconds and the fraction as integers: a float64 cannot
+		// hold ten integer digits and nine fraction digits exactly.
+		sec, err := strconv.ParseInt(s[:i], 10, 64)
 		if err != nil {
 			return time.Time{}, 0, false
 		}
-		t, res = time.Unix(0, int64(f*1e9)).UTC(), fractionRes(len(s)-i-1)
+		frac := s[i+1:]
+		if len(frac) > 9 {
+			frac = frac[:9]
+		}
+		nsec, err := strconv.ParseInt(frac+strings.Repeat("0", 9-len(frac)), 10, 64)
+		if err != nil {
+			return time.Time{}, 0, false
+		}
+		t, res = time.Unix(sec, nsec).UTC(), fractionRes(len(s)-i-1)
 	} else {
 		n, err := strconv.ParseInt(digits, 10, 64)
 		if err != nil {
